@@ -1,0 +1,45 @@
+services:
+  drive:
+    container_name: drive
+    build:
+      context: .
+    volumes:
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DRIVE_CONFIG_FILE}
+        target: /mnt/drive.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DRIVE_DATA_PATH}
+        target: /mnt/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DRIVE_WATCH_PATH}
+        target: /mnt/watch
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./scripts/drive.sh
+        target: /usr/local/bin/drive.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "${DRIVE_HOST}:${DRIVE_PORT}:8080"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: drive.sh serve
+    logging:
+      driver: journald
+      options:
+        tag: drive-drive

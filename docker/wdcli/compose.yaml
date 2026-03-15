@@ -1,0 +1,30 @@
+services:
+  shell:
+    build:
+      context: .
+    container_name: wdcli
+    volumes:
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}
+        target: /mnt/config
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DATA_PATH}
+        target: /mnt/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${STORAGE_PATH}
+        target: /mnt/storage
+        bind:
+          create_host_path: false
+    command: sleep infinity
+    restart: unless-stopped

@@ -1,0 +1,19 @@
+services:
+  transmission:
+    image: docker.io/library/nginx:stable-alpine-slim
+    ports:
+      - "127.0.0.1:${TRANSMISSION_PORT:?Set TRANSMISSION_PORT to the localhost HTTP port}:80"
+    environment:
+      TRANSMISSION_UPSTREAM: "${TRANSMISSION_UPSTREAM:?Set TRANSMISSION_UPSTREAM to the Transmission host:port}"
+    volumes:
+      - type: bind
+        source: ./nginx.conf.template
+        target: /etc/nginx/templates/default.conf.template
+        read_only: true
+        bind:
+          create_host_path: false
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: transmission-nginx

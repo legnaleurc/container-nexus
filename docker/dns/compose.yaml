@@ -1,0 +1,19 @@
+services:
+  dnsmasq:
+    image: dockurr/dnsmasq
+    container_name: dns
+    volumes:
+      - type: bind
+        source: ${DNS_CONFIG_PATH:?Set the dnsmasq.d folder}
+        target: /etc/dnsmasq.d
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "${DNS_HOST_BIND_ADDRESS}:53:53/udp"
+      - "${DNS_HOST_BIND_ADDRESS}:53:53/tcp"
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: dns-dnsmasq

@@ -1,0 +1,41 @@
+services:
+  vpn:
+    build: .
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - type: bind
+        source: ${OVPN_FILE}
+        target: /config/client.ovpn
+        read_only: true
+        bind:
+          create_host_path: false
+    command: openvpn --config /config/client.ovpn
+    ports:
+      - "0.0.0.0:${HOST_PORT_FEED}:${HOST_PORT_FEED}/tcp"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof openvpn >/dev/null && ip link show tun0 >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: portal-vpn
+
+  feed:
+    image: docker.io/alpine/socat:latest
+    network_mode: "service:vpn"
+    command: TCP-LISTEN:${HOST_PORT_FEED},fork,reuseaddr,keepalive,keepidle=60,keepintvl=10,keepcnt=6,max-children=5 TCP:${TARGET_HOST_FEED}:${TARGET_PORT_FEED},keepalive,keepidle=60,keepintvl=10,keepcnt=6,connect-timeout=10
+    depends_on:
+      vpn:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: portal-feed

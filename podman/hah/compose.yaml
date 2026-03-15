@@ -1,0 +1,45 @@
+services:
+  hah:
+    container_name: hah
+    image: docker.io/library/eclipse-temurin:25-jre
+    working_dir: /storage
+    network_mode: "slirp4netns:port_handler=slirp4netns"
+    command:
+      - java
+      - -jar
+      - /app/HaH.jar
+      - --port=${HAH_PORT:?Set the H@H client port}
+      - --data-dir=/storage/data
+      - --cache-dir=/storage/cache
+      - --download-dir=/storage/download
+      - --log-dir=/storage/log
+      - --temp-dir=/storage/tmp
+    ports:
+      - "${HAH_HOST:-0.0.0.0}:${HAH_PORT:?Set the H@H client port}:${HAH_PORT:?Set the H@H client port}/tcp"
+    volumes:
+      - type: bind
+        source: ${HAH_JAR_PATH:?Set the absolute JAR path}
+        target: /app/HaH.jar
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HAH_STORAGE_PATH:?Set the absolute storage folder}
+        target: /storage
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging:
+      driver: journald
+      options:
+        tag: hah-hah

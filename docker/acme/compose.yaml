@@ -1,0 +1,97 @@
+services:
+  acme:
+    image: neilpang/acme.sh:latest
+    container_name: acme
+    restart: unless-stopped
+    pid: host  # Share host PID namespace so we can send signals to nginx
+
+    # Run as root (Synology Container Manager default)
+    user: root
+
+    # Custom entrypoint for auto-configuration
+    # Note: We override entrypoint because we need to run setup logic before starting daemon
+    # Our startup.sh calls 'exec /entry.sh daemon' at the end to properly start acme.sh
+    entrypoint: ["/scripts/startup.sh"]
+
+    environment:
+      # Cloudflare DNS API (only CF_Token is required)
+      - CF_Token=${CF_TOKEN}
+      - CF_Account_ID=${CF_ACCOUNT_ID:-}
+      - CF_Zone_ID=${CF_ZONE_ID:-}
+
+      # Domain configuration
+      - DOMAIN=${DOMAIN}
+      - WILDCARD_DOMAIN=${WILDCARD_DOMAIN}
+      - EMAIL=${EMAIL}
+
+      # Certificate configuration
+      - CERT_KEY_LENGTH=${CERT_KEY_LENGTH}
+      - CA_SERVER=${CA_SERVER:-letsencrypt}
+
+      # Synology configuration
+      - SYNO_CERT_ID=${SYNO_CERT_ID}
+      - SYNO_CERT_ROOT=${SYNO_CERT_ROOT}
+      - SYNO_CERT_ARCHIVE=${SYNO_CERT_ARCHIVE}
+      - SYNO_CERT_DEFAULT=${SYNO_CERT_DEFAULT}
+
+      # Logging
+      - LOG_FILE=${LOG_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
+
+      # acme.sh configuration
+      - LE_CONFIG_HOME=/acme.sh
+      - AUTO_UPGRADE=1
+
+    volumes:
+      # Certificate storage (persistent)
+      - type: bind
+        source: ${ACME_DATA_PATH}
+        target: /acme.sh
+        bind:
+          create_host_path: false
+
+      # Custom scripts
+      - type: bind
+        source: ./scripts
+        target: /scripts
+        read_only: true
+        bind:
+          create_host_path: false
+
+      # Synology certificate directory (read-write for deployment)
+      - type: bind
+        source: /usr/syno/etc/certificate
+        target: /usr/syno/etc/certificate
+        bind:
+          create_host_path: false
+
+      # nginx PID file — needed to send SIGHUP for cert reload (requires pid:host)
+      - type: bind
+        source: /run/nginx.pid
+        target: /run/nginx.pid
+        read_only: true
+        bind:
+          create_host_path: false
+
+      # Logs
+      - type: bind
+        source: ${LOGS_PATH}
+        target: /logs
+        bind:
+          create_host_path: false
+
+      # Use the host timezone for log timestamps
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+
+    logging:
+      driver: journald
+      options:
+        tag: acme-acme
+
+    # Optional: Network mode host if DNS resolution issues occur
+    # network_mode: host
