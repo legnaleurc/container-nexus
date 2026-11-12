@@ -4,8 +4,8 @@ services:
     image: drive-alpha
     build:
       context: .
-      additional_contexts:
-        source: ${DRIVE_SOURCE}
+      args:
+        DRIVE_REF: ${DRIVE_REF:-master}
     volumes:
       - type: bind
         source: /etc/localtime

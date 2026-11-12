@@ -6,8 +6,9 @@ workspace instead of PyPI. It runs alongside the stable `drive` project.
 ## Setup
 
 Copy `.env.example` to `.env` and configure the source, host paths and
-listening address. `DRIVE_SOURCE` is a git URL (pin a branch, tag or commit
-with `#ref`) or an absolute path to a local checkout. Create the
+listening address. `DRIVE_REF` is the wcpan.drive branch, tag or full commit
+hash to build; the build clones it from GitHub, so unpushed changes are not
+included. Create the
 `DRIVE_DATA_PATH` and `DRIVE_WATCH_PATH` directories and the config file
 before starting. Give the container user write access to `DRIVE_DATA_PATH` and
 read access to the configuration file and watch directory. All bind sources
@@ -51,7 +52,9 @@ docker compose up -d
 docker compose logs --tail=100
 ```
 
-To test newer code, rebuild without cache so the source is fetched again:
+The build log prints the commit being built. A branch is fetched only when
+that build step is not cached, so to test newer code on the same branch,
+rebuild without cache (or pin a commit hash in `DRIVE_REF`):
 
 ```sh
 docker compose build --no-cache && docker compose up -d
